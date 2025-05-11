@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}{{ watchlist.name }} - 观察列表详情{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('watchlist.index') }}">观察列表</a></li>
+            <li class="breadcrumb-item active">{{ watchlist.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ watchlist.name }} 
+                {% if watchlist.is_default %}
+                <span class="badge bg-primary">默认</span>
+                {% endif %}
+            </h2>
+            <p class="text-muted">{{ watchlist.description or '无描述' }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('watchlist.add_stock', watchlist_id=watchlist.id) }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> 添加股票
+            </a>
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                更多操作
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editModal">编辑列表</a></li>
+                <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal">删除列表</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-chart-line"></i> 股票列表
+            </div>
+            <div class="d-flex">
+                <input type="text" id="searchInput" class="form-control form-control-sm me-2" placeholder="搜索股票...">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown">
+                        排序
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                        <li><a class="dropdown-item sort-option" data-sort="name" href="#">按名称</a></li>
+                        <li><a class="dropdown-item sort-option" data-sort="code" href="#">按代码</a></li>
+                        <li><a class="dropdown-item sort-option" data-sort="price" href="#">按价格</a></li>
+                        <li><a class="dropdown-item sort-option" data-sort="change" href="#">按涨跌幅</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if watchlist.stocks and watchlist.stocks|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover stock-table">
+                    <thead>
+                        <tr>
+                            <th>代码</th>
+                            <th>名称</th>
+                            <th>最新价</th>
+                            <th>涨跌幅</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in watchlist.stocks %}
+                        <tr data-code="{{ stock.code }}" data-name="{{ stock.name }}">
+                            <td>{{ stock.code }}</td>
+                            <td>{{ stock.name }}</td>
+                            <td class="price">{{ stock.price|default('--', true) }}</td>
+                            <td class="change {% if stock.change_percent and stock.change_percent > 0 %}text-success{% elif stock.change_percent and stock.change_percent < 0 %}text-danger{% endif %}">
+                                {% if stock.change_percent %}
+                                    {{ stock.change_percent|round(2) }}%
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="note-text">{{ stock.notes or '' }}</span>
+                                <a href="#" class="edit-note-btn ms-2" data-code="{{ stock.code }}"><i class="fas fa-edit"></i></a>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('stock.detail', code=stock.code) }}" class="btn btn-outline-primary">详情</a>
+                                    <button type="button" class="btn btn-outline-danger remove-stock-btn" data-code="{{ stock.code }}" data-name="{{ stock.name }}">移除</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="mb-0">观察列表中还没有股票</p>
+                <a href="{{ url_for('watchlist.add_stock', watchlist_id=watchlist.id) }}" class="btn btn-outline-primary mt-2">
+                    <i class="fas fa-plus"></i> 添加股票
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 编辑观察列表模态框 -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">编辑观察列表</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">名称</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ watchlist.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ watchlist.description }}</textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="is_default" name="is_default" {% if watchlist.is_default %}checked{% endif %}>
+                        <label class="form-check-label" for="is_default">
+                            设为默认观察列表
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveWatchlistBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑备注模态框 -->
+<div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="noteModalLabel">编辑股票备注</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <input type="hidden" id="noteStockCode">
+                    <div class="mb-3">
+                        <label for="stockNote" class="form-label">备注</label>
+                        <textarea class="form-control" id="stockNote" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveNoteBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除"{{ watchlist.name }}"观察列表吗？此操作不可恢复。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="deleteWatchlistBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 移除股票确认模态框 -->
+<div class="modal fade" id="removeStockModal" tabindex="-1" aria-labelledby="removeStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeStockModalLabel">确认移除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                确定要从观察列表中移除 <span id="removeStockName"></span> 吗？
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">确认移除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取最新价格
+        function updateStockPrices() {
+            const stockCodes = Array.from(document.querySelectorAll('.stock-table tbody tr')).map(row => row.dataset.code);
+            if (stockCodes.length === 0) return;
+            
+            stockCodes.forEach(code => {
+                fetch(`/stock/api/stocks/${code}/price`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const priceCell = document.querySelector(`tr[data-code="${code}"] td.price`);
+                            if (priceCell) {
+                                priceCell.textContent = data.data.price.toFixed(2);
+                            }
+                        }
+                    })
+                    .catch(error => console.error('获取股票价格失败:', error));
+            });
+        }
+        
+        // 初始化时更新价格
+        updateStockPrices();
+        
+        // 每60秒更新一次价格
+        setInterval(updateStockPrices, 60000);
+        
+        // 搜索功能
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.stock-table tbody tr');
+            
+            rows.forEach(row => {
+                const code = row.dataset.code.toLowerCase();
+                const name = row.dataset.name.toLowerCase();
+                
+                if (code.includes(searchTerm) || name.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+        
+        // 排序功能
+        const sortOptions = document.querySelectorAll('.sort-option');
+        sortOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sortField = this.dataset.sort;
+                const rows = Array.from(document.querySelectorAll('.stock-table tbody tr'));
+                
+                rows.sort((a, b) => {
+                    let valA, valB;
+                    
+                    if (sortField === 'name') {
+                        valA = a.dataset.name;
+                        valB = b.dataset.name;
+                    } else if (sortField === 'code') {
+                        valA = a.dataset.code;
+                        valB = b.dataset.code;
+                    } else if (sortField === 'price') {
+                        valA = parseFloat(a.querySelector('.price').textContent) || 0;
+                        valB = parseFloat(b.querySelector('.price').textContent) || 0;
+                    } else if (sortField === 'change') {
+                        valA = parseFloat(a.querySelector('.change').textContent) || 0;
+                        valB = parseFloat(b.querySelector('.change').textContent) || 0;
+                    }
+                    
+                    if (typeof valA === 'string' && typeof valB === 'string') {
+                        return valA.localeCompare(valB);
+                    } else {
+                        return valA - valB;
+                    }
+                });
+                
+                const tbody = document.querySelector('.stock-table tbody');
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+        
+        // 编辑观察列表
+        const saveWatchlistBtn = document.getElementById('saveWatchlistBtn');
+        saveWatchlistBtn.addEventListener('click', function() {
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const isDefault = document.getElementById('is_default').checked;
+            
+            if (!name) {
+                alert('请输入观察列表名称');
+                return;
+            }
+            
+            fetch(`/watchlist/api/watchlists/{{ watchlist.id }}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description,
+                    is_default: isDefault
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('观察列表更新成功');
+                    location.reload();
+                } else {
+                    alert('更新失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('更新观察列表失败:', error);
+                alert('更新失败，请稍后重试');
+            });
+        });
+        
+        // 删除观察列表
+        const deleteWatchlistBtn = document.getElementById('deleteWatchlistBtn');
+        deleteWatchlistBtn.addEventListener('click', function() {
+            fetch(`/watchlist/api/watchlists/{{ watchlist.id }}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('观察列表删除成功');
+                    window.location.href = '{{ url_for("watchlist.index") }}';
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('删除观察列表失败:', error);
+                alert('删除失败，请稍后重试');
+            });
+        });
+        
+        // 编辑备注
+        const editNoteBtns = document.querySelectorAll('.edit-note-btn');
+        const noteModal = new bootstrap.Modal(document.getElementById('noteModal'));
+        
+        editNoteBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const stockCode = this.dataset.code;
+                const noteText = this.parentElement.querySelector('.note-text').textContent;
+                
+                document.getElementById('noteStockCode').value = stockCode;
+                document.getElementById('stockNote').value = noteText;
+                
+                noteModal.show();
+            });
+        });
+        
+        // 保存备注
+        const saveNoteBtn = document.getElementById('saveNoteBtn');
+        saveNoteBtn.addEventListener('click', function() {
+            const stockCode = document.getElementById('noteStockCode').value;
+            const notes = document.getElementById('stockNote').value;
+            
+            fetch(`/watchlist/api/watchlists/{{ watchlist.id }}/stocks/${stockCode}/notes`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ notes: notes })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const noteText = document.querySelector(`tr[data-code="${stockCode}"] .note-text`);
+                    if (noteText) {
+                        noteText.textContent = notes;
+                    }
+                    noteModal.hide();
+                } else {
+                    alert('更新备注失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('更新备注失败:', error);
+                alert('更新备注失败，请稍后重试');
+            });
+        });
+        
+        // 移除股票
+        const removeStockBtns = document.querySelectorAll('.remove-stock-btn');
+        const removeStockModal = new bootstrap.Modal(document.getElementById('removeStockModal'));
+        let currentStockCode = '';
+        
+        removeStockBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentStockCode = this.dataset.code;
+                document.getElementById('removeStockName').textContent = this.dataset.name + ' (' + currentStockCode + ')';
+                removeStockModal.show();
+            });
+        });
+        
+        // 确认移除股票
+        const confirmRemoveBtn = document.getElementById('confirmRemoveBtn');
+        confirmRemoveBtn.addEventListener('click', function() {
+            if (!currentStockCode) return;
+            
+            fetch(`/watchlist/api/watchlists/{{ watchlist.id }}/stocks/${currentStockCode}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const row = document.querySelector(`tr[data-code="${currentStockCode}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                    removeStockModal.hide();
+                    
+                    // 检查是否还有股票
+                    const rows = document.querySelectorAll('.stock-table tbody tr');
+                    if (rows.length === 0) {
+                        location.reload(); // 如果没有股票了，刷新页面
+                    }
+                } else {
+                    alert('移除股票失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('移除股票失败:', error);
+                alert('移除股票失败，请稍后重试');
+            });
+        });
+    });
+</script>
+{% endblock %} 

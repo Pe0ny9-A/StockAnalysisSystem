@@ -1,0 +1,28 @@
+<div class="header-container">
+    <div class="logo">
+        <h1><a href="{{ url_for('main.index') }}">股票系统</a></h1>
+    </div>
+    <div class="nav-menu">
+        <el-menu mode="horizontal" router>
+            <el-menu-item index="{{ url_for('main.index') }}">首页</el-menu-item>
+            
+            {% if current_user.is_authenticated %}
+            <el-menu-item index="{{ url_for('main.dashboard') }}">仪表盘</el-menu-item>
+            
+            <!-- 下拉菜单 -->
+            <el-sub-menu>
+                <template #title>
+                    <span>{{ current_user.username }}</span>
+                </template>
+                <el-menu-item index="/user/profile">个人资料</el-menu-item>
+                <el-menu-item index="/user/settings">账户设置</el-menu-item>
+                <el-divider></el-divider>
+                <el-menu-item index="{{ url_for('auth.logout') }}">登出</el-menu-item>
+            </el-sub-menu>
+            {% else %}
+            <el-menu-item index="{{ url_for('auth.login') }}">登录</el-menu-item>
+            <el-menu-item index="{{ url_for('auth.register') }}">注册</el-menu-item>
+            {% endif %}
+        </el-menu>
+    </div>
+</div> 

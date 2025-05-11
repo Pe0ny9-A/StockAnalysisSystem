@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}投资组合{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的投资组合</h2>
+        <a href="{{ url_for('portfolio.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 创建投资组合
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- 投资组合卡片列表 -->
+        <div class="col-md-8">
+            <div class="row" id="portfolioList">
+                <!-- 此处将通过AJAX动态加载投资组合列表 -->
+                <div class="col-12 py-5 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2">正在加载投资组合...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 资产统计 -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">资产统计</h5>
+                </div>
+                <div class="card-body" id="assetsStats">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mb-0 mt-2">加载资产统计...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">持仓分布</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="holdingsDistributionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除 <span id="portfolioName"></span> 投资组合吗？此操作不可恢复。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let holdingsChart = null;
+        
+        // 加载投资组合列表
+        function loadPortfolios() {
+            const portfolioList = document.getElementById('portfolioList');
+            
+            fetch('/portfolio/api/portfolios')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (data.data.length === 0) {
+                            portfolioList.innerHTML = `
+                                <div class="col-12 text-center py-5">
+                                    <div class="alert alert-info">
+                                        <h4>您还没有创建投资组合</h4>
+                                        <p>点击"创建投资组合"按钮开始您的投资之旅</p>
+                                    </div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        let html = '';
+                        data.data.forEach(portfolio => {
+                            let totalValue = portfolio.total_value || 0;
+                            let totalCost = portfolio.total_cost || 0;
+                            let totalProfit = totalValue - totalCost;
+                            let profitPercentage = totalCost > 0 ? (totalProfit / totalCost * 100).toFixed(2) : 0;
+                            
+                            html += `
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                ${portfolio.name}
+                                                ${portfolio.is_default ? '<span class="badge bg-primary ms-2">默认</span>' : ''}
+                                            </h5>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenu${portfolio.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    操作
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="dropdownMenu${portfolio.id}">
+                                                    <li><a class="dropdown-item" href="${portfolio.id}">编辑</a></li>
+                                                    <li><a class="dropdown-item text-danger delete-portfolio" href="#" data-id="${portfolio.id}" data-name="${portfolio.name}" data-bs-toggle="modal" data-bs-target="#deleteModal">删除</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <div class="col-6">
+                                                    <h6 class="mb-1">总市值</h6>
+                                                    <h5 class="mb-0">${totalValue.toFixed(2)}元</h5>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h6 class="mb-1">总盈亏</h6>
+                                                    <h5 class="mb-0 ${totalProfit >= 0 ? 'text-success' : 'text-danger'}">
+                                                        ${totalProfit.toFixed(2)}元
+                                                        <small>(${profitPercentage}%)</small>
+                                                    </h5>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <h6 class="mb-1">持仓数量</h6>
+                                                <p class="mb-0">${portfolio.holdings_count || 0} 支股票</p>
+                                            </div>
+                                            
+                                            <div class="d-grid">
+                                                <a href="${portfolio.id}" class="btn btn-outline-primary">查看详情</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        portfolioList.innerHTML = html;
+                        
+                        // 绑定删除事件
+                        document.querySelectorAll('.delete-portfolio').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const portfolioId = this.dataset.id;
+                                const portfolioName = this.dataset.name;
+                                
+                                document.getElementById('portfolioName').textContent = portfolioName;
+                                document.getElementById('confirmDeleteBtn').dataset.id = portfolioId;
+                            });
+                        });
+                    } else {
+                        portfolioList.innerHTML = `
+                            <div class="col-12 text-center py-5">
+                                <div class="alert alert-danger">
+                                    <h4>加载失败</h4>
+                                    <p>${data.message || '无法加载投资组合列表，请刷新页面重试'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载投资组合失败:', error);
+                    portfolioList.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <div class="alert alert-danger">
+                                <h4>加载失败</h4>
+                                <p>无法加载投资组合列表，请刷新页面重试</p>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+        
+        // 加载资产统计
+        function loadAssetsStats() {
+            const assetsStats = document.getElementById('assetsStats');
+            
+            fetch('/portfolio/api/portfolios')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (data.data.length === 0) {
+                            assetsStats.innerHTML = `
+                                <div class="text-center py-3">
+                                    <p class="mb-0">暂无投资组合</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        let totalValue = 0;
+                        let totalCost = 0;
+                        let totalProfit = 0;
+                        
+                        data.data.forEach(portfolio => {
+                            totalValue += portfolio.total_value || 0;
+                            totalCost += portfolio.total_cost || 0;
+                        });
+                        
+                        totalProfit = totalValue - totalCost;
+                        let profitPercentage = totalCost > 0 ? (totalProfit / totalCost * 100).toFixed(2) : 0;
+                        
+                        assetsStats.innerHTML = `
+                            <div class="mb-4">
+                                <h5 class="mb-1">总资产</h5>
+                                <h3 class="mb-0">${totalValue.toFixed(2)}元</h3>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5 class="mb-1">总盈亏</h5>
+                                <h3 class="mb-0 ${totalProfit >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${totalProfit.toFixed(2)}元
+                                    <small>(${profitPercentage}%)</small>
+                                </h3>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5 class="mb-1">总成本</h5>
+                                <h3 class="mb-0">${totalCost.toFixed(2)}元</h3>
+                            </div>
+                            
+                            <div>
+                                <h5 class="mb-1">投资组合数量</h5>
+                                <h3 class="mb-0">${data.data.length}</h3>
+                            </div>
+                        `;
+                        
+                        // 生成持仓分布图表
+                        loadHoldingsDistribution();
+                    } else {
+                        assetsStats.innerHTML = `
+                            <div class="text-center py-3">
+                                <div class="alert alert-danger mb-0">
+                                    <p class="mb-0">${data.message || '无法加载资产统计，请刷新页面重试'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载资产统计失败:', error);
+                    assetsStats.innerHTML = `
+                        <div class="text-center py-3">
+                            <div class="alert alert-danger mb-0">
+                                <p class="mb-0">无法加载资产统计，请刷新页面重试</p>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+        
+        // 加载持仓分布
+        function loadHoldingsDistribution() {
+            // 模拟数据，实际应该从服务器获取
+            const data = {
+                labels: ['科技', '金融', '医药', '消费', '能源', '其他'],
+                datasets: [{
+                    data: [30, 25, 15, 10, 10, 10],
+                    backgroundColor: [
+                        '#4CAF50',
+                        '#2196F3',
+                        '#FF9800',
+                        '#F44336',
+                        '#9C27B0',
+                        '#795548'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            
+            const ctx = document.getElementById('holdingsDistributionChart').getContext('2d');
+            
+            // 销毁之前的图表
+            if (holdingsChart) {
+                holdingsChart.destroy();
+            }
+            
+            // 创建新图表
+            holdingsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${percentage}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 确认删除投资组合
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            const portfolioId = this.dataset.id;
+            
+            fetch(`/portfolio/api/portfolios/${portfolioId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    modal.hide();
+                    
+                    // 重新加载数据
+                    loadPortfolios();
+                    loadAssetsStats();
+                } else {
+                    alert('删除失败: ' + (data.message || '请稍后重试'));
+                }
+            })
+            .catch(error => {
+                console.error('删除投资组合失败:', error);
+                alert('删除失败，请稍后重试');
+            });
+        });
+        
+        // 页面加载时获取数据
+        loadPortfolios();
+        loadAssetsStats();
+    });
+</script>
+{% endblock %} 

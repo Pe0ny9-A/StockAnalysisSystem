@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}股票系统 - 帮助中心{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="help-container">
+        <h1 class="page-title">帮助中心</h1>
+        
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="8" :md="6" :lg="6" :xl="6">
+                <div class="help-nav">
+                    <el-card>
+                        <template #header>
+                            <div class="nav-header">
+                                <h3>快速导航</h3>
+                            </div>
+                        </template>
+                        <el-menu default-active="1" class="help-menu">
+                            <el-menu-item index="1">
+                                <span>系统概述</span>
+                            </el-menu-item>
+                            <el-menu-item index="2">
+                                <span>股票查询</span>
+                            </el-menu-item>
+                            <el-menu-item index="3">
+                                <span>投资组合</span>
+                            </el-menu-item>
+                            <el-menu-item index="4">
+                                <span>交易功能</span>
+                            </el-menu-item>
+                            <el-menu-item index="5">
+                                <span>AI分析</span>
+                            </el-menu-item>
+                            <el-menu-item index="6">
+                                <span>账户设置</span>
+                            </el-menu-item>
+                            <el-menu-item index="7">
+                                <span>常见问题</span>
+                            </el-menu-item>
+                        </el-menu>
+                    </el-card>
+                </div>
+            </el-col>
+            
+            <el-col :xs="24" :sm="16" :md="18" :lg="18" :xl="18">
+                <div class="help-content">
+                    <el-card>
+                        <h2 id="overview">系统概述</h2>
+                        <p>股票系统是一个集股票行情查询、技术分析、投资组合管理和AI智能分析于一体的综合平台。本系统旨在为个人投资者提供专业级的投资工具和参考建议。</p>
+                        
+                        <h2 id="stock-query">股票查询</h2>
+                        <p>在股票查询页面，您可以：</p>
+                        <ul>
+                            <li>通过股票代码或名称搜索股票</li>
+                            <li>查看实时行情和K线图</li>
+                            <li>分析技术指标和趋势</li>
+                            <li>获取公司基本面数据</li>
+                        </ul>
+                        
+                        <h2 id="portfolio">投资组合</h2>
+                        <p>投资组合功能允许您：</p>
+                        <ul>
+                            <li>创建和管理多个投资组合</li>
+                            <li>跟踪持仓表现</li>
+                            <li>分析投资组合风险</li>
+                            <li>查看历史收益率</li>
+                        </ul>
+                        
+                        <h2 id="trading">交易功能</h2>
+                        <p>交易功能包括：</p>
+                        <ul>
+                            <li>模拟买入和卖出股票</li>
+                            <li>设置交易提醒</li>
+                            <li>查看交易历史</li>
+                            <li>分析历史交易表现</li>
+                        </ul>
+                        
+                        <h2 id="ai-analysis">AI分析</h2>
+                        <p>AI分析功能提供：</p>
+                        <ul>
+                            <li>智能市场分析</li>
+                            <li>个股风险评估</li>
+                            <li>行业前景预测</li>
+                            <li>投资策略建议</li>
+                        </ul>
+                        
+                        <h2 id="account">账户设置</h2>
+                        <p>在账户设置中，您可以：</p>
+                        <ul>
+                            <li>修改个人资料</li>
+                            <li>更改密码</li>
+                            <li>设置通知偏好</li>
+                            <li>管理订阅计划</li>
+                        </ul>
+                        
+                        <h2 id="faq">常见问题</h2>
+                        <el-collapse>
+                            <el-collapse-item title="如何开始使用股票系统？" name="1">
+                                <p>注册并登录账户后，您可以从仪表盘开始探索各项功能。建议先浏览股票市场概览，然后尝试创建您的第一个投资组合。</p>
+                            </el-collapse-item>
+                            <el-collapse-item title="数据更新频率是多少？" name="2">
+                                <p>我们的市场数据每分钟更新一次，公司基本面数据根据财报发布时间定期更新。</p>
+                            </el-collapse-item>
+                            <el-collapse-item title="是否可以连接实盘交易？" name="3">
+                                <p>目前我们只提供模拟交易功能，暂不支持连接实盘交易账户。</p>
+                            </el-collapse-item>
+                            <el-collapse-item title="AI分析结果的准确性如何？" name="4">
+                                <p>AI分析基于历史数据和市场模型，仅供参考，不构成投资建议。实际市场情况可能与分析结果有差异。</p>
+                            </el-collapse-item>
+                            <el-collapse-item title="如何导出我的交易数据？" name="5">
+                                <p>在交易历史页面，点击"导出数据"按钮，可选择CSV或Excel格式导出您的交易记录。</p>
+                            </el-collapse-item>
+                        </el-collapse>
+                    </el-card>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+</div>
+
+<style>
+.help-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #303133;
+}
+
+.help-nav {
+    position: sticky;
+    top: 20px;
+}
+
+.nav-header {
+    display: flex;
+    align-items: center;
+}
+
+.help-menu {
+    border-right: none;
+}
+
+.help-content h2 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ebeef5;
+    padding-bottom: 10px;
+    color: #409EFF;
+}
+
+.help-content h2:first-child {
+    margin-top: 0;
+}
+
+.help-content ul {
+    padding-left: 20px;
+    line-height: 1.6;
+}
+
+.help-content p {
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+</style>
+{% endblock %} 

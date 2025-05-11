@@ -1,0 +1,56 @@
+<el-menu
+    class="sidebar-menu"
+    default-active="{{ request.path }}"
+    router>
+    
+    <el-menu-item index="{{ url_for('main.dashboard') }}">
+        <template #title>
+            <i class="el-icon-s-home"></i>
+            <span>仪表盘</span>
+        </template>
+    </el-menu-item>
+    
+    <el-menu-item index="/stocks">
+        <template #title>
+            <i class="el-icon-data-line"></i>
+            <span>行情中心</span>
+        </template>
+    </el-menu-item>
+    
+    <el-sub-menu index="portfolio">
+        <template #title>
+            <i class="el-icon-s-finance"></i>
+            <span>投资组合</span>
+        </template>
+        <el-menu-item index="/portfolios">我的组合</el-menu-item>
+        <el-menu-item index="/watchlists">自选股</el-menu-item>
+    </el-sub-menu>
+    
+    <el-menu-item index="/trading">
+        <template #title>
+            <i class="el-icon-s-order"></i>
+            <span>交易中心</span>
+        </template>
+    </el-menu-item>
+    
+    <el-menu-item index="/analytics">
+        <template #title>
+            <i class="el-icon-s-data"></i>
+            <span>分析工具</span>
+        </template>
+    </el-menu-item>
+    
+    <el-menu-item index="/ai">
+        <template #title>
+            <i class="el-icon-s-opportunity"></i>
+            <span>AI 智能分析</span>
+        </template>
+    </el-menu-item>
+    
+    <el-menu-item index="/settings">
+        <template #title>
+            <i class="el-icon-setting"></i>
+            <span>系统设置</span>
+        </template>
+    </el-menu-item>
+</el-menu> 

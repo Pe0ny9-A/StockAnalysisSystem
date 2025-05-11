@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}股票系统{% endblock %}</title>
+    
+    <!-- CSS 样式 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.4.1/theme-chalk/index.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <div id="app">
+        <el-container>
+            <!-- 侧边栏 -->
+            {% if current_user.is_authenticated %}
+            <el-aside width="200px">
+                {% include 'components/sidebar.html' %}
+            </el-aside>
+            {% endif %}
+            
+            <el-container>
+                <!-- 顶部导航 -->
+                <el-header>
+                    {% include 'components/header.html' %}
+                </el-header>
+                
+                <!-- 主要内容区 -->
+                <el-main>
+                    <!-- 消息闪现 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <el-alert
+                                title="{{ message }}"
+                                type="{{ category if category != 'message' else 'info' }}"
+                                show-icon
+                                :closable="true">
+                            </el-alert>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- 主要内容 -->
+                    {% block content %}{% endblock %}
+                </el-main>
+                
+                <!-- 页脚 -->
+                <el-footer>
+                    {% include 'components/footer.html' %}
+                </el-footer>
+            </el-container>
+        </el-container>
+    </div>
+
+    <!-- JavaScript 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.4.1/dist/index.full.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- CSRF 配置 -->
+    <script>
+        axios.defaults.headers.common['X-CSRFToken'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    </script>
+    
+    <!-- 主要应用脚本 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- 页面特定脚本 -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

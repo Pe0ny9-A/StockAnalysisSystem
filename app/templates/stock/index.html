@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+
+{% block title %}股票系统 - 股票列表{% endblock %}
+
+{% block content %}
+<div class="stock-list-container">
+    <h1 class="page-title">股票列表</h1>
+    
+    <!-- 搜索框 -->
+    <div class="search-container">
+        <el-card>
+            <div class="search-box">
+                <el-input
+                    v-model="searchKeyword"
+                    placeholder="输入股票代码或名称搜索"
+                    class="search-input"
+                    clearable
+                    @keyup.enter="searchStocks">
+                    <template #append>
+                        <el-button @click="searchStocks">
+                            <i class="el-icon-search"></i>
+                        </el-button>
+                    </template>
+                </el-input>
+            </div>
+            <div class="hot-search">
+                <span class="label">热门搜索：</span>
+                <el-tag 
+                    v-for="item in hotStocks" 
+                    :key="item.code" 
+                    @click="goToStockDetail(item.code)"
+                    class="hot-tag">
+                    {% raw %}{{ item.name }} ({{ item.code }}){% endraw %}
+                </el-tag>
+            </div>
+        </el-card>
+    </div>
+    
+    <!-- 市场行情 -->
+    <div class="market-overview">
+        <h2 class="section-title">市场行情</h2>
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6" v-for="index in marketIndices" :key="index.code">
+                <el-card class="market-index-card">
+                    <div class="index-name">{% raw %}{{ index.name }}{% endraw %}</div>
+                    <div class="index-data">
+                        <div class="index-price" :class="index.status === 'up' ? 'price-up' : 'price-down'">
+                            {% raw %}{{ index.price }}{% endraw %}
+                        </div>
+                        <div class="index-change" :class="index.status === 'up' ? 'price-up' : 'price-down'">
+                            {% raw %}{{ index.change }}{% endraw %}
+                            <i :class="index.status === 'up' ? 'el-icon-caret-top' : 'el-icon-caret-bottom'"></i>
+                        </div>
+                    </div>
+                </el-card>
+            </el-col>
+        </el-row>
+    </div>
+    
+    <!-- 股票列表 -->
+    <div class="stock-table">
+        <h2 class="section-title">股票列表</h2>
+        <el-card>
+            <el-tabs v-model="activeTab" @tab-click="handleTabClick">
+                <el-tab-pane label="沪深A股" name="A"></el-tab-pane>
+                <el-tab-pane label="科创板" name="KC"></el-tab-pane>
+                <el-tab-pane label="港股" name="HK"></el-tab-pane>
+                <el-tab-pane label="美股" name="US"></el-tab-pane>
+            </el-tabs>
+            
+            <el-table :data="stockList" style="width: 100%" v-loading="loading">
+                <el-table-column prop="code" label="代码" width="100"></el-table-column>
+                <el-table-column label="名称" width="150">
+                    <template #default="scope">
+                        <a :href="'/stock/detail/' + scope.row.code" class="stock-link">
+                            {% raw %}{{ scope.row.name }}{% endraw %}
+                        </a>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="price" label="最新价" width="100"></el-table-column>
+                <el-table-column label="涨跌幅" width="120">
+                    <template #default="scope">
+                        <span :class="scope.row.status === 'up' ? 'price-up' : 'price-down'">
+                            {% raw %}{{ scope.row.change }}{% endraw %}
+                            <i :class="scope.row.status === 'up' ? 'el-icon-caret-top' : 'el-icon-caret-bottom'"></i>
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="volume" label="成交量" width="120"></el-table-column>
+                <el-table-column prop="amount" label="成交额" width="120"></el-table-column>
+                <el-table-column prop="turnover" label="换手率" width="120"></el-table-column>
+                <el-table-column prop="pe" label="市盈率" width="120"></el-table-column>
+                <el-table-column label="操作">
+                    <template #default="scope">
+                        <el-button 
+                            size="mini" 
+                            type="primary" 
+                            @click="goToStockDetail(scope.row.code)">
+                            详情
+                        </el-button>
+                        <el-button 
+                            size="mini" 
+                            type="success" 
+                            @click="goToTrade('buy', scope.row.code)">
+                            买入
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            
+            <div class="pagination">
+                <el-pagination
+                    background
+                    layout="prev, pager, next"
+                    :total="totalStocks"
+                    :current-page="currentPage"
+                    :page-size="pageSize"
+                    @current-change="handlePageChange">
+                </el-pagination>
+            </div>
+        </el-card>
+    </div>
+</div>
+
+<style>
+.stock-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #303133;
+}
+
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-box {
+    margin-bottom: 15px;
+}
+
+.search-input {
+    width: 100%;
+}
+
+.hot-search {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.label {
+    margin-right: 10px;
+    color: #909399;
+}
+
+.hot-tag {
+    margin: 5px;
+    cursor: pointer;
+}
+
+.section-title {
+    margin: 20px 0 15px;
+    color: #303133;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.market-overview {
+    margin-bottom: 20px;
+}
+
+.market-index-card {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.index-name {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.index-data {
+    display: flex;
+    justify-content: space-around;
+}
+
+.index-price {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.index-change {
+    font-size: 14px;
+}
+
+.price-up {
+    color: #f56c6c;
+}
+
+.price-down {
+    color: #67c23a;
+}
+
+.stock-link {
+    color: #409EFF;
+    text-decoration: none;
+}
+
+.stock-link:hover {
+    text-decoration: underline;
+}
+
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const app = Vue.createApp({
+        data() {
+            return {
+                searchKeyword: '',
+                activeTab: 'A',
+                currentPage: 1,
+                pageSize: 10,
+                totalStocks: 100,
+                loading: false,
+                stockList: [],
+                hotStocks: [
+                    { name: '贵州茅台', code: '600519.SH' },
+                    { name: '阿里巴巴', code: '09988.HK' },
+                    { name: '宁德时代', code: '300750.SZ' },
+                    { name: '中国平安', code: '601318.SH' },
+                    { name: '腾讯控股', code: '00700.HK' }
+                ],
+                marketIndices: [
+                    { name: '上证指数', code: '000001.SH', price: '3100.25', change: '+0.68%', status: 'up' },
+                    { name: '深证成指', code: '399001.SZ', price: '10582.43', change: '+1.22%', status: 'up' },
+                    { name: '创业板指', code: '399006.SZ', price: '2134.87', change: '-0.45%', status: 'down' },
+                    { name: '沪深300', code: '000300.SH', price: '4021.56', change: '+0.92%', status: 'up' }
+                ]
+            };
+        },
+        mounted() {
+            this.fetchStockList();
+        },
+        methods: {
+            searchStocks() {
+                if (this.searchKeyword.trim()) {
+                    window.location.href = `/stock/search?keyword=${this.searchKeyword.trim()}`;
+                }
+            },
+            goToStockDetail(code) {
+                window.location.href = `/stock/detail/${code}`;
+            },
+            goToTrade(type, code) {
+                window.location.href = `/trading/${type}?code=${code}`;
+            },
+            handleTabClick() {
+                this.currentPage = 1;
+                this.fetchStockList();
+            },
+            handlePageChange(page) {
+                this.currentPage = page;
+                this.fetchStockList();
+            },
+            fetchStockList() {
+                this.loading = true;
+                
+                // 模拟获取股票列表数据
+                // 实际项目中应从后端API获取
+                setTimeout(() => {
+                    this.stockList = this.generateMockStockList();
+                    this.loading = false;
+                }, 500);
+            },
+            generateMockStockList() {
+                const stocks = [];
+                const marketPrefix = {
+                    'A': ['600', '601', '603', '000', '002', '300'],
+                    'KC': ['688'],
+                    'HK': ['00', '02', '09'],
+                    'US': ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'FB']
+                };
+                
+                const prefixes = marketPrefix[this.activeTab] || marketPrefix['A'];
+                const suffixes = this.activeTab === 'US' ? [''] : ['.SH', '.SZ', '.HK'];
+                
+                const names = [
+                    '科技', '银行', '电子', '医药', '新能源', '汽车', '材料',
+                    '食品', '地产', '消费', '传媒', '通信', '建筑', '保险'
+                ];
+                
+                for (let i = 0; i < 10; i++) {
+                    const isPrefixUS = this.activeTab === 'US';
+                    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                    const suffix = isPrefixUS ? '' : suffixes[Math.floor(Math.random() * suffixes.length)];
+                    const code = isPrefixUS ? prefix : `${prefix}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}${suffix}`;
+                    
+                    const isUp = Math.random() > 0.4;
+                    const change = isUp 
+                        ? `+${(Math.random() * 5).toFixed(2)}%` 
+                        : `-${(Math.random() * 5).toFixed(2)}%`;
+                    
+                    stocks.push({
+                        code: code,
+                        name: `${names[Math.floor(Math.random() * names.length)]}${Math.floor(Math.random() * 100)}`,
+                        price: (Math.random() * 100 + 10).toFixed(2),
+                        change: change,
+                        status: isUp ? 'up' : 'down',
+                        volume: `${(Math.random() * 10000 + 1000).toFixed(0)}万`,
+                        amount: `${(Math.random() * 10000 + 1000).toFixed(0)}万`,
+                        turnover: `${(Math.random() * 10).toFixed(2)}%`,
+                        pe: (Math.random() * 50 + 5).toFixed(2)
+                    });
+                }
+                
+                return stocks;
+            }
+        }
+    });
+    
+    app.use(ElementPlus);
+    app.mount('#app');
+});
+</script>
+{% endblock %} 

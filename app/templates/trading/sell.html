@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}卖出股票{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('portfolio.index') }}">投资组合</a></li>
+            {% if portfolio %}
+            <li class="breadcrumb-item"><a href="{{ url_for('portfolio.detail', portfolio_id=portfolio.id) }}">{{ portfolio.name }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">卖出股票</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">卖出股票</h4>
+        </div>
+        <div class="card-body">
+            {% if not holdings or holdings|length == 0 %}
+                <div class="alert alert-info">
+                    <h5>您没有可卖出的股票</h5>
+                    <p>请先在您的投资组合中买入股票</p>
+                    <a href="{{ url_for('trading.buy') }}" class="btn btn-primary mt-2">去买入股票</a>
+                </div>
+            {% else %}
+                <form method="POST" action="{{ url_for('trading.sell') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- 选择投资组合 -->
+                    <div class="mb-4">
+                        <h5>选择投资组合</h5>
+                        <div class="mb-3">
+                            <label for="portfolio_id" class="form-label">投资组合 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="portfolio_id" name="portfolio_id" required>
+                                <option value="">选择投资组合</option>
+                                {% for p in portfolios %}
+                                <option value="{{ p.id }}" {% if portfolio and portfolio.id == p.id %}selected{% elif request.args.get('portfolio_id') == p.id|string %}selected{% elif p.is_default and not portfolio %}selected{% endif %}>
+                                    {{ p.name }} {% if p.is_default %}(默认){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 选择股票 -->
+                    <div class="mb-4">
+                        <h5>选择股票</h5>
+                        <div class="mb-3">
+                            <label for="holding_id" class="form-label">持仓股票 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="holding_id" name="holding_id" required {% if not portfolio %}disabled{% endif %}>
+                                <option value="">{% if not portfolio %}请先选择投资组合{% else %}选择股票{% endif %}</option>
+                                {% if holdings %}
+                                    {% for holding in holdings %}
+                                    <option value="{{ holding.id }}" data-code="{{ holding.stock_code }}" data-name="{{ holding.stock_name }}" data-price="{{ holding.current_price }}" data-quantity="{{ holding.quantity }}" data-cost="{{ holding.cost_price }}" {% if stock and stock.code == holding.stock_code %}selected{% endif %}>
+                                        {{ holding.stock_name }} ({{ holding.stock_code }}) - 持有{{ holding.quantity }}股
+                                    </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="stockInfoSection" class="mb-4 d-none">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">最新价</h6>
+                                        <h5 class="mb-0" id="currentPrice">--</h5>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">持仓数量</h6>
+                                        <h5 class="mb-0" id="holdingQuantity">--</h5>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">持仓成本</h6>
+                                        <h5 class="mb-0" id="holdingCost">--</h5>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="#" class="btn btn-sm btn-outline-primary" id="viewDetailBtn">查看详情</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 交易信息 -->
+                    <div class="mb-4">
+                        <h5>交易信息</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">卖出价格 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="price" name="price" 
+                                               step="0.01" min="0.01" required>
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">卖出数量 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="quantity" name="quantity" 
+                                               min="100" step="100" value="100" required>
+                                        <span class="input-group-text">股</span>
+                                    </div>
+                                    <div class="form-text">A股最低交易单位为100股</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="total" class="form-label">交易金额</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="total" readonly>
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="profit" class="form-label">预计盈亏</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="profit" readonly>
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 额外信息 -->
+                    <div class="mb-4">
+                        <h5>额外信息</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="commission" class="form-label">手续费</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="commission" name="commission" 
+                                               step="0.01" min="0" value="0">
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="executed_at" class="form-label">交易日期</label>
+                                    <input type="date" class="form-control" id="executed_at" name="executed_at" 
+                                           value="{{ today }}">
+                                    <div class="form-text">默认为今天，可修改为历史交易日期</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="note" class="form-label">交易备注</label>
+                            <textarea class="form-control" id="note" name="note" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary">返回</a>
+                        <button type="submit" class="btn btn-danger">确认卖出</button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const portfolioSelect = document.getElementById('portfolio_id');
+        const holdingSelect = document.getElementById('holding_id');
+        const stockInfoSection = document.getElementById('stockInfoSection');
+        const currentPriceElem = document.getElementById('currentPrice');
+        const holdingQuantityElem = document.getElementById('holdingQuantity');
+        const holdingCostElem = document.getElementById('holdingCost');
+        const viewDetailBtn = document.getElementById('viewDetailBtn');
+        const priceInput = document.getElementById('price');
+        const quantityInput = document.getElementById('quantity');
+        const totalInput = document.getElementById('total');
+        const profitInput = document.getElementById('profit');
+        
+        let selectedHoldingData = null;
+        
+        // 投资组合变更时，更新股票列表
+        portfolioSelect.addEventListener('change', function() {
+            const portfolioId = this.value;
+            
+            // 重置持仓选择
+            holdingSelect.innerHTML = '<option value="">选择股票</option>';
+            holdingSelect.disabled = !portfolioId;
+            
+            // 隐藏股票信息
+            stockInfoSection.classList.add('d-none');
+            
+            // 清空价格和数量
+            priceInput.value = '';
+            
+            if (portfolioId) {
+                // 显示加载状态
+                holdingSelect.innerHTML = '<option value="">加载中...</option>';
+                
+                // 获取该投资组合的持仓列表
+                fetch(`/portfolio/api/portfolios/${portfolioId}/holdings`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            if (data.data.length === 0) {
+                                holdingSelect.innerHTML = '<option value="">该投资组合没有持仓</option>';
+                            } else {
+                                let options = '<option value="">选择股票</option>';
+                                data.data.forEach(holding => {
+                                    options += `<option value="${holding.id}" data-code="${holding.stock_code}" data-name="${holding.stock_name}" data-price="${holding.current_price}" data-quantity="${holding.quantity}" data-cost="${holding.cost_price}">
+                                        ${holding.stock_name} (${holding.stock_code}) - 持有${holding.quantity}股
+                                    </option>`;
+                                });
+                                holdingSelect.innerHTML = options;
+                            }
+                        } else {
+                            holdingSelect.innerHTML = '<option value="">加载失败</option>';
+                            alert('获取持仓列表失败: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取持仓列表失败:', error);
+                        holdingSelect.innerHTML = '<option value="">加载失败</option>';
+                        alert('获取持仓列表失败，请稍后重试');
+                    });
+            }
+        });
+        
+        // 持仓变更时，更新股票信息
+        holdingSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (!this.value) {
+                stockInfoSection.classList.add('d-none');
+                priceInput.value = '';
+                quantityInput.value = '100';
+                return;
+            }
+            
+            selectedHoldingData = {
+                code: selectedOption.dataset.code,
+                name: selectedOption.dataset.name,
+                price: parseFloat(selectedOption.dataset.price),
+                quantity: parseInt(selectedOption.dataset.quantity),
+                cost: parseFloat(selectedOption.dataset.cost)
+            };
+            
+            // 更新股票信息
+            currentPriceElem.textContent = selectedHoldingData.price.toFixed(2);
+            holdingQuantityElem.textContent = selectedHoldingData.quantity;
+            holdingCostElem.textContent = selectedHoldingData.cost.toFixed(2);
+            viewDetailBtn.href = `/stock/detail/${selectedHoldingData.code}`;
+            
+            // 显示股票信息
+            stockInfoSection.classList.remove('d-none');
+            
+            // 设置默认价格和最大可卖数量
+            priceInput.value = selectedHoldingData.price.toFixed(2);
+            quantityInput.max = selectedHoldingData.quantity;
+            
+            // 如果当前设置的数量超过最大可卖数量，则调整
+            if (parseInt(quantityInput.value) > selectedHoldingData.quantity) {
+                quantityInput.value = selectedHoldingData.quantity;
+            }
+            
+            // 计算交易金额和预计盈亏
+            calculateTotalAndProfit();
+        });
+        
+        // 计算交易金额和预计盈亏
+        function calculateTotalAndProfit() {
+            if (!selectedHoldingData) return;
+            
+            const price = parseFloat(priceInput.value) || 0;
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            // 确保数量不超过持有数量
+            if (quantity > selectedHoldingData.quantity) {
+                quantityInput.value = selectedHoldingData.quantity;
+                quantity = selectedHoldingData.quantity;
+            }
+            
+            // 计算交易金额
+            const total = price * quantity;
+            totalInput.value = total.toFixed(2);
+            
+            // 计算预计盈亏
+            const cost = selectedHoldingData.cost * quantity;
+            const profit = total - cost;
+            profitInput.value = profit.toFixed(2);
+            profitInput.className = profit >= 0 ? 'form-control text-success' : 'form-control text-danger';
+        }
+        
+        // 监听价格和数量变化，重新计算
+        priceInput.addEventListener('input', calculateTotalAndProfit);
+        quantityInput.addEventListener('input', calculateTotalAndProfit);
+        
+        // 初始加载
+        const urlParams = new URLSearchParams(window.location.search);
+        const stockCode = urlParams.get('stock_code');
+        const portfolioId = urlParams.get('portfolio_id');
+        
+        // 如果URL中有投资组合参数，触发变更事件
+        if (portfolioId && portfolioSelect.value) {
+            portfolioSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{% endblock %} 

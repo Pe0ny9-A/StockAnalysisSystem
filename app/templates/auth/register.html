@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}注册 - 股票系统{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <h2>用户注册</h2>
+        <p>创建一个新账户</p>
+    </div>
+    
+    <form method="post" action="{{ url_for('auth.register') }}" class="auth-form">
+        {{ form.csrf_token if form }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        
+        <el-form label-position="top">
+            <el-form-item label="用户名">
+                <el-input type="text" name="username" placeholder="设置用户名（3-20个字符）" required></el-input>
+            </el-form-item>
+            
+            <el-form-item label="邮箱">
+                <el-input type="email" name="email" placeholder="设置邮箱" required></el-input>
+            </el-form-item>
+            
+            <el-form-item label="密码">
+                <el-input type="password" name="password" placeholder="设置密码（至少8位）" show-password required></el-input>
+                <div class="password-hint">
+                    密码必须包含大小写字母和数字，长度至少为8位
+                </div>
+            </el-form-item>
+            
+            <el-form-item label="确认密码">
+                <el-input type="password" name="password_confirm" placeholder="确认密码" show-password required></el-input>
+            </el-form-item>
+            
+            <div class="auth-actions">
+                <el-button type="primary" native-type="submit">注册</el-button>
+            </div>
+        </el-form>
+    </form>
+    
+    <div class="auth-footer">
+        <p>
+            已有账户？ <a href="{{ url_for('auth.login') }}">立即登录</a>
+        </p>
+    </div>
+</div>
+
+<style>
+.password-hint {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 5px;
+}
+</style>
+{% endblock %} 

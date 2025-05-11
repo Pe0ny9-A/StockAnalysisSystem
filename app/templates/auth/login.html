@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}登录 - 股票系统{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <h2>用户登录</h2>
+        <p>欢迎回来，请登录您的账户</p>
+    </div>
+    
+    <form method="post" action="{{ url_for('auth.login') }}" class="auth-form">
+        {{ form.csrf_token if form }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        
+        <el-form label-position="top">
+            <el-form-item label="邮箱">
+                <el-input type="email" name="email" placeholder="请输入邮箱" required></el-input>
+            </el-form-item>
+            
+            <el-form-item label="密码">
+                <el-input type="password" name="password" placeholder="请输入密码" show-password required></el-input>
+            </el-form-item>
+            
+            <el-form-item>
+                <el-checkbox name="remember">记住我</el-checkbox>
+            </el-form-item>
+            
+            <div class="auth-actions">
+                <el-button type="primary" native-type="submit">登录</el-button>
+            </div>
+        </el-form>
+    </form>
+    
+    <div class="auth-footer">
+        <p>
+            还没有账户？ <a href="{{ url_for('auth.register') }}">立即注册</a>
+        </p>
+        <p>
+            <a href="{{ url_for('auth.reset_password_request') }}">忘记密码？</a>
+        </p>
+    </div>
+</div>
+{% endblock %} 

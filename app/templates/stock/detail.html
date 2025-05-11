@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}{{ stock.name }} ({{ stock.code }}) - 股票详情{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.bootcdn.net/ajax/libs/tradingview-lightweight-charts/3.8.0/lightweight-charts.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- 左侧股票信息 -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">股票信息</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            操作
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <li><a class="dropdown-item add-to-watchlist" href="#" data-bs-toggle="modal" data-bs-target="#addToWatchlistModal">添加到观察列表</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('trading.buy') }}?stock_code={{ stock.code }}">买入</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('trading.sell') }}?stock_code={{ stock.code }}">卖出</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h3 class="mb-0">{{ stock.name }} <small class="text-muted">{{ stock.code }}</small></h3>
+                    
+                    <div class="price-section my-3">
+                        <h2 class="price mb-0 {% if stock.change and stock.change > 0 %}text-success{% elif stock.change and stock.change < 0 %}text-danger{% endif %}">
+                            {{ stock.price|default('--', true) }}
+                        </h2>
+                        <div class="change {% if stock.change_percent and stock.change_percent > 0 %}text-success{% elif stock.change_percent and stock.change_percent < 0 %}text-danger{% endif %}">
+                            {% if stock.change %}
+                                {{ stock.change }} ({{ stock.change_percent }}%)
+                            {% else %}
+                                --
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="trading-info my-3">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">今开</dt>
+                            <dd class="col-sm-6">{{ stock.open|default('--', true) }}</dd>
+                            
+                            <dt class="col-sm-6">最高</dt>
+                            <dd class="col-sm-6">{{ stock.high|default('--', true) }}</dd>
+                            
+                            <dt class="col-sm-6">最低</dt>
+                            <dd class="col-sm-6">{{ stock.low|default('--', true) }}</dd>
+                            
+                            <dt class="col-sm-6">成交量</dt>
+                            <dd class="col-sm-6">{{ stock.volume|default('--', true) }}</dd>
+                            
+                            <dt class="col-sm-6">成交额</dt>
+                            <dd class="col-sm-6">{{ stock.turnover|default('--', true) }}</dd>
+                            
+                            <dt class="col-sm-6">市场</dt>
+                            <dd class="col-sm-6">{{ stock.market }}</dd>
+                            
+                            <dt class="col-sm-6">行业</dt>
+                            <dd class="col-sm-6">{{ stock.industry|default('--', true) }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">财务数据</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">市盈率(PE)</dt>
+                        <dd class="col-sm-6">{{ stock.pe_ratio|default('--', true) }}</dd>
+                        
+                        <dt class="col-sm-6">市净率(PB)</dt>
+                        <dd class="col-sm-6">{{ stock.pb_ratio|default('--', true) }}</dd>
+                        
+                        <dt class="col-sm-6">每股收益(EPS)</dt>
+                        <dd class="col-sm-6">{{ stock.eps|default('--', true) }}</dd>
+                        
+                        <dt class="col-sm-6">净资产收益率(ROE)</dt>
+                        <dd class="col-sm-6">{{ stock.roe|default('--', true) }}%</dd>
+                        
+                        <dt class="col-sm-6">股息率</dt>
+                        <dd class="col-sm-6">{{ stock.dividend_yield|default('--', true) }}%</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧K线图 -->
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="chartTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="candlestick-tab" data-bs-toggle="tab" data-bs-target="#candlestick" type="button" role="tab" aria-controls="candlestick" aria-selected="true">K线图</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="line-tab" data-bs-toggle="tab" data-bs-target="#line" type="button" role="tab" aria-controls="line" aria-selected="false">分时图</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group btn-group-sm mb-3" role="group" aria-label="Period">
+                        <button type="button" class="btn btn-outline-primary period-btn active" data-period="daily">日K</button>
+                        <button type="button" class="btn btn-outline-primary period-btn" data-period="weekly">周K</button>
+                        <button type="button" class="btn btn-outline-primary period-btn" data-period="monthly">月K</button>
+                    </div>
+                    
+                    <div class="tab-content" id="chartTabContent">
+                        <div class="tab-pane fade show active" id="candlestick" role="tabpanel" aria-labelledby="candlestick-tab">
+                            <div id="candlestickChart" style="height: 400px;"></div>
+                        </div>
+                        <div class="tab-pane fade" id="line" role="tabpanel" aria-labelledby="line-tab">
+                            <div id="lineChart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">历史交易记录</h5>
+                    <a href="{{ url_for('trading.history') }}?stock_code={{ stock.code }}" class="btn btn-sm btn-outline-primary">查看全部</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>类型</th>
+                                    <th>价格</th>
+                                    <th>数量</th>
+                                    <th>总金额</th>
+                                    <th>投资组合</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTable">
+                                <!-- 交易记录将通过AJAX加载 -->
+                                <tr>
+                                    <td colspan="6" class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        <span class="ms-2">加载交易记录...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加到观察列表模态框 -->
+<div class="modal fade" id="addToWatchlistModal" tabindex="-1" aria-labelledby="addToWatchlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToWatchlistModalLabel">添加到观察列表</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="watchlistSelect" class="form-label">选择观察列表</label>
+                    <select class="form-select" id="watchlistSelect">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="stockNotes" class="form-label">备注（可选）</label>
+                    <textarea class="form-control" id="stockNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmAddToWatchlist">确认添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.bootcdn.net/ajax/libs/tradingview-lightweight-charts/3.8.0/lightweight-charts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const stockCode = '{{ stock.code }}';
+        let currentPeriod = 'daily';
+        let candlestickChart, candlestickSeries;
+        let lineChart, lineSeries;
+        
+        // 初始化K线图
+        function initCandlestickChart() {
+            const chartElement = document.getElementById('candlestickChart');
+            
+            candlestickChart = LightweightCharts.createChart(chartElement, {
+                width: chartElement.clientWidth,
+                height: chartElement.clientHeight,
+                layout: {
+                    backgroundColor: '#ffffff',
+                    textColor: '#333',
+                },
+                grid: {
+                    vertLines: {
+                        color: '#e0e0e0',
+                    },
+                    horzLines: {
+                        color: '#e0e0e0',
+                    },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#cccccc',
+                },
+                timeScale: {
+                    borderColor: '#cccccc',
+                    timeVisible: true,
+                },
+            });
+            
+            candlestickSeries = candlestickChart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
+            
+            loadCandlestickData(currentPeriod);
+            
+            // 响应式处理
+            window.addEventListener('resize', function() {
+                candlestickChart.resize(chartElement.clientWidth, chartElement.clientHeight);
+            });
+        }
+        
+        // 初始化分时图
+        function initLineChart() {
+            const chartElement = document.getElementById('lineChart');
+            
+            lineChart = LightweightCharts.createChart(chartElement, {
+                width: chartElement.clientWidth,
+                height: chartElement.clientHeight,
+                layout: {
+                    backgroundColor: '#ffffff',
+                    textColor: '#333',
+                },
+                grid: {
+                    vertLines: {
+                        color: '#e0e0e0',
+                    },
+                    horzLines: {
+                        color: '#e0e0e0',
+                    },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#cccccc',
+                },
+                timeScale: {
+                    borderColor: '#cccccc',
+                    timeVisible: true,
+                },
+            });
+            
+            lineSeries = lineChart.addAreaSeries({
+                topColor: 'rgba(33, 150, 243, 0.56)',
+                bottomColor: 'rgba(33, 150, 243, 0.04)',
+                lineColor: 'rgba(33, 150, 243, 1)',
+                lineWidth: 2,
+            });
+            
+            // 响应式处理
+            window.addEventListener('resize', function() {
+                lineChart.resize(chartElement.clientWidth, chartElement.clientHeight);
+            });
+        }
+        
+        // 加载K线数据
+        function loadCandlestickData(period) {
+            fetch(`/stock/api/stocks/${stockCode}/kline?period=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' && data.data.kline.length > 0) {
+                        const formattedData = data.data.kline.map(item => ({
+                            time: item.date.replace(/-/g, '/'),
+                            open: item.open,
+                            high: item.high,
+                            low: item.low,
+                            close: item.close
+                        }));
+                        
+                        candlestickSeries.setData(formattedData);
+                        
+                        // 更新分时图数据
+                        if (lineSeries) {
+                            const lineData = formattedData.map(item => ({
+                                time: item.time,
+                                value: item.close
+                            }));
+                            lineSeries.setData(lineData);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('获取K线数据失败:', error);
+                });
+        }
+        
+        // 加载交易记录
+        function loadTransactions() {
+            const transactionsTable = document.getElementById('transactionsTable');
+            
+            fetch(`/trading/api/transactions?stock_code=${stockCode}&limit=5`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        let html = '';
+                        
+                        if (data.data.length === 0) {
+                            html = `<tr><td colspan="6" class="text-center py-3">暂无交易记录</td></tr>`;
+                        } else {
+                            data.data.forEach(transaction => {
+                                html += `
+                                    <tr>
+                                        <td>${transaction.executed_at}</td>
+                                        <td class="${transaction.transaction_type === 'BUY' ? 'text-success' : 'text-danger'}">
+                                            ${transaction.transaction_type === 'BUY' ? '买入' : '卖出'}
+                                        </td>
+                                        <td>${transaction.price}</td>
+                                        <td>${transaction.quantity}</td>
+                                        <td>${transaction.total_amount}</td>
+                                        <td>${transaction.portfolio_name}</td>
+                                    </tr>
+                                `;
+                            });
+                        }
+                        
+                        transactionsTable.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取交易记录失败:', error);
+                    transactionsTable.innerHTML = `<tr><td colspan="6" class="text-center py-3">加载交易记录失败</td></tr>`;
+                });
+        }
+        
+        // 加载观察列表
+        function loadWatchlists() {
+            const watchlistSelect = document.getElementById('watchlistSelect');
+            
+            fetch('/watchlist/api/watchlists')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        let options = '';
+                        
+                        if (data.data.length === 0) {
+                            options = '<option value="">暂无观察列表</option>';
+                        } else {
+                            data.data.forEach(watchlist => {
+                                options += `<option value="${watchlist.id}" ${watchlist.is_default ? 'selected' : ''}>${watchlist.name}</option>`;
+                            });
+                        }
+                        
+                        watchlistSelect.innerHTML = options;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取观察列表失败:', error);
+                    watchlistSelect.innerHTML = '<option value="">加载失败</option>';
+                });
+        }
+        
+        // 添加到观察列表
+        function addToWatchlist() {
+            const watchlistId = document.getElementById('watchlistSelect').value;
+            const notes = document.getElementById('stockNotes').value;
+            
+            if (!watchlistId) {
+                alert('请选择观察列表');
+                return;
+            }
+            
+            fetch(`/watchlist/api/watchlists/${watchlistId}/stocks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    stock_code: stockCode,
+                    notes: notes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('添加成功');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addToWatchlistModal'));
+                    modal.hide();
+                } else {
+                    alert('添加失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('添加到观察列表失败:', error);
+                alert('添加失败，请稍后重试');
+            });
+        }
+        
+        // 切换K线周期
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                currentPeriod = this.dataset.period;
+                loadCandlestickData(currentPeriod);
+            });
+        });
+        
+        // 添加到观察列表按钮
+        document.getElementById('confirmAddToWatchlist').addEventListener('click', addToWatchlist);
+        
+        // 页面加载时初始化图表和数据
+        initCandlestickChart();
+        initLineChart();
+        loadTransactions();
+        loadWatchlists();
+        
+        // 切换图表类型时重新调整大小
+        const chartTabs = document.getElementById('chartTabs');
+        chartTabs.addEventListener('shown.bs.tab', function (event) {
+            if (event.target.id === 'candlestick-tab' && candlestickChart) {
+                const element = document.getElementById('candlestickChart');
+                candlestickChart.resize(element.clientWidth, element.clientHeight);
+            } else if (event.target.id === 'line-tab' && lineChart) {
+                const element = document.getElementById('lineChart');
+                lineChart.resize(element.clientWidth, element.clientHeight);
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}观察列表{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的观察列表</h2>
+        <a href="{{ url_for('watchlist.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 创建观察列表
+        </a>
+    </div>
+
+    <div class="row">
+        {% if watchlists %}
+            {% for watchlist in watchlists %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                {{ watchlist.name }}
+                                {% if watchlist.is_default %}
+                                <span class="badge bg-primary">默认</span>
+                                {% endif %}
+                            </h5>
+                            <p class="card-text text-muted small">
+                                创建于: {{ watchlist.created_at.strftime('%Y-%m-%d') }}
+                            </p>
+                            <p class="card-text">
+                                {{ watchlist.description or '无描述' }}
+                            </p>
+                            <div class="d-flex justify-content-between">
+                                <span class="badge bg-info">{{ watchlist.stocks_count }} 支股票</span>
+                                <a href="{{ url_for('watchlist.detail', watchlist_id=watchlist.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">查看详情</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-info">
+                    <h4>您还没有创建观察列表</h4>
+                    <p>点击上方"创建观察列表"按钮开始关注您感兴趣的股票</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除这个观察列表吗？此操作不可恢复。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form id="deleteForm" method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 删除确认模态框
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteForm = document.getElementById('deleteForm');
+        
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const url = button.getAttribute('data-bs-url');
+            deleteForm.action = url;
+        });
+    });
+</script>
+{% endblock %} 

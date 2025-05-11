@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}股票系统 - 首页{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <el-row :gutter="20">
+        <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
+            <!-- 主要内容区 -->
+            <el-card>
+                <template #header>
+                    <div class="card-header">
+                        <h2>欢迎使用股票系统</h2>
+                    </div>
+                </template>
+                <div class="welcome-content">
+                    <p>这是一个为个人投资者设计的综合股票信息和交易系统，提供以下功能：</p>
+                    <ul>
+                        <li>实时行情数据查询</li>
+                        <li>K线图表和技术指标分析</li>
+                        <li>个人投资组合管理</li>
+                        <li>模拟交易功能</li>
+                        <li>人工智能分析和预测</li>
+                    </ul>
+                    
+                    {% if not current_user.is_authenticated %}
+                    <div class="action-buttons">
+                        <el-button type="primary" @click="window.location.href='{{ url_for('auth.login') }}'">登录</el-button>
+                        <el-button @click="window.location.href='{{ url_for('auth.register') }}'">注册</el-button>
+                    </div>
+                    {% else %}
+                    <div class="action-buttons">
+                        <el-button type="primary" @click="window.location.href='{{ url_for('main.dashboard') }}'">进入仪表盘</el-button>
+                    </div>
+                    {% endif %}
+                </div>
+            </el-card>
+            
+            <!-- 市场概览 -->
+            <el-card style="margin-top: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>市场概览</h3>
+                    </div>
+                </template>
+                <div class="market-overview">
+                    <p>市场数据将从API获取并显示在这里。</p>
+                    <!-- 示例数据，实际项目中应从后端获取 -->
+                    <el-table :data="[
+                        {name: '上证指数', code: '000001.SH', price: '3100.25', change: '0.68%', status: 'up'},
+                        {name: '深证成指', code: '399001.SZ', price: '10582.43', change: '1.22%', status: 'up'},
+                        {name: '创业板指', code: '399006.SZ', price: '2134.87', change: '-0.45%', status: 'down'},
+                        {name: '沪深300', code: '000300.SH', price: '4021.56', change: '0.92%', status: 'up'},
+                    ]" style="width: 100%">
+                        <el-table-column prop="name" label="指数名称"></el-table-column>
+                        <el-table-column prop="code" label="代码"></el-table-column>
+                        <el-table-column prop="price" label="最新价"></el-table-column>
+                        <el-table-column prop="change" label="涨跌幅">
+                            <template #default="scope">
+                                <span :class="scope.row.status === 'up' ? 'price-up' : 'price-down'">
+                                {% raw %}
+                                    {{ scope.row.change }}
+                                {% endraw %}
+                                </span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </el-card>
+        </el-col>
+        
+        <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+            <!-- 侧边栏内容 -->
+            <!-- 热门股票 -->
+            <el-card>
+                <template #header>
+                    <div class="card-header">
+                        <h3>热门股票</h3>
+                    </div>
+                </template>
+                <div class="hot-stocks">
+                    <p>热门股票数据将从API获取并显示在这里。</p>
+                    <ul class="stock-list">
+                        <li>
+                            <span class="stock-name">腾讯控股</span>
+                            <span class="stock-code">00700.HK</span>
+                            <span class="stock-price price-up">344.80</span>
+                        </li>
+                        <li>
+                            <span class="stock-name">阿里巴巴</span>
+                            <span class="stock-code">09988.HK</span>
+                            <span class="stock-price price-up">87.15</span>
+                        </li>
+                        <li>
+                            <span class="stock-name">贵州茅台</span>
+                            <span class="stock-code">600519.SH</span>
+                            <span class="stock-price price-down">1689.00</span>
+                        </li>
+                        <li>
+                            <span class="stock-name">宁德时代</span>
+                            <span class="stock-code">300750.SZ</span>
+                            <span class="stock-price price-up">219.86</span>
+                        </li>
+                    </ul>
+                </div>
+            </el-card>
+            
+            <!-- 市场动态 -->
+            <el-card style="margin-top: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>市场动态</h3>
+                    </div>
+                </template>
+                <div class="market-news">
+                    <p>市场新闻将从API获取并显示在这里。</p>
+                    <ul class="news-list">
+                        <li>
+                            <a href="#">央行宣布降准0.5个百分点，释放流动性约1.2万亿元</a>
+                            <span class="news-time">10:30</span>
+                        </li>
+                        <li>
+                            <a href="#">国家统计局公布最新经济数据，GDP同比增长5.2%</a>
+                            <span class="news-time">09:15</span>
+                        </li>
+                        <li>
+                            <a href="#">多家券商看好新能源汽车板块，行业景气度持续提升</a>
+                            <span class="news-time">08:45</span>
+                        </li>
+                        <li>
+                            <a href="#">科创板新股中签率创新低，半导体企业获资金热捧</a>
+                            <span class="news-time">昨天</span>
+                        </li>
+                    </ul>
+                </div>
+            </el-card>
+            
+            <!-- AI分析洞见 -->
+            <el-card style="margin-top: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>AI分析洞见</h3>
+                    </div>
+                </template>
+                <div class="ai-insights">
+                    <p>AI生成的市场洞见将显示在这里。</p>
+                    <div class="insight-content">
+                        <p>根据最新市场数据分析，本周市场情绪指数偏向乐观，短期内可能有结构性机会。新能源、半导体、人工智能等科技领域仍是资金关注重点，建议关注相关个股的业绩表现和政策动向。</p>
+                        <div class="ai-tag">
+                            <el-tag size="small">AI生成内容</el-tag>
+                        </div>
+                    </div>
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+</div>
+
+<style>
+.home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-content {
+    margin-bottom: 20px;
+}
+
+.welcome-content ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.welcome-content li {
+    margin-bottom: 8px;
+}
+
+.stock-list, .news-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.stock-list li, .news-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stock-list li:last-child, .news-list li:last-child {
+    border-bottom: none;
+}
+
+.stock-name {
+    font-weight: bold;
+}
+
+.stock-code {
+    color: #909399;
+    margin-left: 10px;
+}
+
+.news-time {
+    color: #909399;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.news-list a {
+    color: #303133;
+    text-decoration: none;
+    flex: 1;
+}
+
+.news-list a:hover {
+    color: #409EFF;
+}
+
+.insight-content {
+    position: relative;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+.ai-tag {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+}
+</style>
+{% endblock %} 

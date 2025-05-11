@@ -1,0 +1,506 @@
+{% extends 'base.html' %}
+
+{% block title %}股票系统 - 个人仪表盘{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- 欢迎信息和概览卡片 -->
+    <div class="welcome-section">
+        <el-card>
+            <template #header>
+                <div class="card-header">
+                    <h2>欢迎回来，{{ current_user.username }}</h2>
+                </div>
+            </template>
+            <div class="overview-cards">
+                <el-row :gutter="20">
+                    <el-col :xs="24" :sm="12" :md="6" :lg="6" :xl="6">
+                        <div class="data-card total-assets">
+                            <div class="card-icon">
+                                <i class="el-icon-wallet"></i>
+                            </div>
+                            <div class="card-data">
+                                <div class="data-label">总资产</div>
+                                <div class="data-value">¥{{ total_assets|default('0.00') }}</div>
+                                <div class="data-change {{ total_change_class }}">
+                                    {{ total_change|default('0.00%') }}
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :xs="24" :sm="12" :md="6" :lg="6" :xl="6">
+                        <div class="data-card available-cash">
+                            <div class="card-icon">
+                                <i class="el-icon-money"></i>
+                            </div>
+                            <div class="card-data">
+                                <div class="data-label">可用资金</div>
+                                <div class="data-value">¥{{ available_cash|default('0.00') }}</div>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :xs="24" :sm="12" :md="6" :lg="6" :xl="6">
+                        <div class="data-card today-profit">
+                            <div class="card-icon">
+                                <i class="el-icon-data-line"></i>
+                            </div>
+                            <div class="card-data">
+                                <div class="data-label">今日盈亏</div>
+                                <div class="data-value {{ today_profit_class }}">
+                                    ¥{{ today_profit|default('0.00') }}
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :xs="24" :sm="12" :md="6" :lg="6" :xl="6">
+                        <div class="data-card total-profit">
+                            <div class="card-icon">
+                                <i class="el-icon-shopping-bag-1"></i>
+                            </div>
+                            <div class="card-data">
+                                <div class="data-label">总收益</div>
+                                <div class="data-value {{ total_profit_class }}">
+                                    ¥{{ total_profit|default('0.00') }}
+                                </div>
+                                <div class="data-change {{ total_profit_change_class }}">
+                                    {{ total_profit_rate|default('0.00%') }}
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+        </el-card>
+    </div>
+    
+    <el-row :gutter="20" style="margin-top: 20px;">
+        <!-- 左侧内容：投资组合和交易历史 -->
+        <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
+            <!-- 我的投资组合 -->
+            <el-card style="margin-bottom: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>我的投资组合</h3>
+                        <el-button size="small" type="primary" @click="window.location.href='{{ url_for('portfolio.create') }}'">
+                            创建组合
+                        </el-button>
+                    </div>
+                </template>
+                {% if portfolios %}
+                <el-table :data="[
+                    {% for portfolio in portfolios %}
+                    {
+                        name: '{{ portfolio.name }}',
+                        assets: '{{ portfolio.total_assets }}',
+                        stocks: '{{ portfolio.stock_count }}',
+                        change: '{{ portfolio.change_rate }}',
+                        status: '{{ portfolio.status }}',
+                        id: '{{ portfolio.id }}'
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]" style="width: 100%">
+                    <el-table-column prop="name" label="组合名称">
+                        <template #default="scope">
+                            <a :href="'/portfolio/' + scope.row.id" class="portfolio-link">
+                                {% raw %}{{ scope.row.name }}{% endraw %}
+                            </a>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="assets" label="总资产"></el-table-column>
+                    <el-table-column prop="stocks" label="持仓数量"></el-table-column>
+                    <el-table-column prop="change" label="收益率">
+                        <template #default="scope">
+                            <span :class="scope.row.status === 'up' ? 'price-up' : 'price-down'">
+                                {% raw %}{{ scope.row.change }}{% endraw %}
+                            </span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作">
+                        <template #default="scope">
+                            <el-button size="mini" @click="window.location.href='/portfolio/' + scope.row.id">
+                                详情
+                            </el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                {% else %}
+                <div class="empty-data">
+                    <p>您还没有创建投资组合</p>
+                    <el-button type="primary" @click="window.location.href='{{ url_for('portfolio.create') }}'">
+                        立即创建
+                    </el-button>
+                </div>
+                {% endif %}
+            </el-card>
+            
+            <!-- 最近交易记录 -->
+            <el-card>
+                <template #header>
+                    <div class="card-header">
+                        <h3>最近交易记录</h3>
+                        <el-button size="small" @click="window.location.href='{{ url_for('trading.history') }}'">
+                            查看全部
+                        </el-button>
+                    </div>
+                </template>
+                {% if recent_trades %}
+                <el-table :data="[
+                    {% for trade in recent_trades %}
+                    {
+                        stock_name: '{{ trade.stock_name }}',
+                        stock_code: '{{ trade.stock_code }}',
+                        price: '{{ trade.price }}',
+                        quantity: '{{ trade.quantity }}',
+                        type: '{{ trade.type }}',
+                        date: '{{ trade.trade_date }}'
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]" style="width: 100%">
+                    <el-table-column prop="date" label="交易日期" width="100"></el-table-column>
+                    <el-table-column prop="stock_name" label="股票名称">
+                        <template #default="scope">
+                            <a :href="'/stock/' + scope.row.stock_code" class="stock-link">
+                                {% raw %}{{ scope.row.stock_name }}{% endraw %}
+                            </a>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="price" label="价格"></el-table-column>
+                    <el-table-column prop="quantity" label="数量"></el-table-column>
+                    <el-table-column prop="type" label="类型">
+                        <template #default="scope">
+                            <el-tag :type="scope.row.type === '买入' ? 'danger' : 'success'" size="small">
+                                {% raw %}{{ scope.row.type }}{% endraw %}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                {% else %}
+                <div class="empty-data">
+                    <p>暂无交易记录</p>
+                    <el-button type="primary" @click="window.location.href='{{ url_for('stock.index') }}'">
+                        去交易
+                    </el-button>
+                </div>
+                {% endif %}
+            </el-card>
+        </el-col>
+        
+        <!-- 右侧内容：市场概览和AI分析 -->
+        <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+            <!-- 市场概览 -->
+            <el-card style="margin-bottom: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>市场概览</h3>
+                    </div>
+                </template>
+                <div class="market-overview">
+                    <el-table :data="[
+                        {name: '上证指数', code: '000001.SH', price: '3100.25', change: '0.68%', status: 'up'},
+                        {name: '深证成指', code: '399001.SZ', price: '10582.43', change: '1.22%', status: 'up'},
+                        {name: '创业板指', code: '399006.SZ', price: '2134.87', change: '-0.45%', status: 'down'},
+                        {name: '沪深300', code: '000300.SH', price: '4021.56', change: '0.92%', status: 'up'},
+                    ]" style="width: 100%">
+                        <el-table-column prop="name" label="指数名称"></el-table-column>
+                        <el-table-column prop="price" label="最新价"></el-table-column>
+                        <el-table-column prop="change" label="涨跌幅">
+                            <template #default="scope">
+                                <span :class="scope.row.status === 'up' ? 'price-up' : 'price-down'">
+                                    {% raw %}{{ scope.row.change }}{% endraw %}
+                                </span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </el-card>
+            
+            <!-- AI推荐 -->
+            <el-card style="margin-bottom: 20px;">
+                <template #header>
+                    <div class="card-header">
+                        <h3>AI推荐股票</h3>
+                    </div>
+                </template>
+                <div class="ai-recommendations">
+                    <el-table :data="[
+                        {name: '贵州茅台', code: '600519.SH', price: '1689.00', target: '1860.00', reason: '季报超预期'},
+                        {name: '宁德时代', code: '300750.SZ', price: '219.86', target: '260.00', reason: '新能源行业龙头'},
+                        {name: '中国平安', code: '601318.SH', price: '42.56', target: '52.00', reason: '低估值优质蓝筹'},
+                    ]" style="width: 100%">
+                        <el-table-column prop="name" label="股票名称">
+                            <template #default="scope">
+                                <a :href="'/stock/' + scope.row.code" class="stock-link">
+                                    {% raw %}{{ scope.row.name }}{% endraw %}
+                                </a>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="price" label="当前价"></el-table-column>
+                        <el-table-column prop="target" label="目标价"></el-table-column>
+                    </el-table>
+                    <div class="ai-tag">
+                        <el-tag size="small">AI生成内容</el-tag>
+                        <a href="{{ url_for('ai.analysis') }}" class="more-link">更多分析</a>
+                    </div>
+                </div>
+            </el-card>
+            
+            <!-- 投资表现 -->
+            <el-card>
+                <template #header>
+                    <div class="card-header">
+                        <h3>投资表现</h3>
+                    </div>
+                </template>
+                <div class="performance-chart">
+                    <div id="performance-chart" style="height: 250px;"></div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color user-color"></div>
+                            <div class="legend-text">我的收益</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color market-color"></div>
+                            <div class="legend-text">沪深300</div>
+                        </div>
+                    </div>
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+</div>
+
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h2, .card-header h3 {
+    margin: 0;
+}
+
+.overview-cards {
+    margin-top: 10px;
+}
+
+.data-card {
+    display: flex;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+}
+
+.total-assets {
+    background-color: #ecf5ff;
+}
+
+.available-cash {
+    background-color: #f0f9eb;
+}
+
+.today-profit {
+    background-color: #fdf6ec;
+}
+
+.total-profit {
+    background-color: #fef0f0;
+}
+
+.card-icon {
+    font-size: 40px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.data-label {
+    font-size: 14px;
+    color: #909399;
+}
+
+.data-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.data-change {
+    font-size: 14px;
+}
+
+.price-up {
+    color: #f56c6c;
+}
+
+.price-down {
+    color: #67c23a;
+}
+
+.portfolio-link, .stock-link {
+    color: #409EFF;
+    text-decoration: none;
+}
+
+.portfolio-link:hover, .stock-link:hover {
+    text-decoration: underline;
+}
+
+.empty-data {
+    text-align: center;
+    padding: 20px;
+}
+
+.ai-tag {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.more-link {
+    color: #909399;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.more-link:hover {
+    color: #409EFF;
+}
+
+.performance-chart {
+    position: relative;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 8px;
+    margin-right: 5px;
+}
+
+.user-color {
+    background-color: #409EFF;
+}
+
+.market-color {
+    background-color: #E6A23C;
+}
+
+.legend-text {
+    font-size: 12px;
+    color: #606266;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 绘制投资表现图表
+    if(document.getElementById('performance-chart')) {
+        const performanceChart = echarts.init(document.getElementById('performance-chart'));
+        
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    formatter: '{value}%'
+                }
+            },
+            series: [
+                {
+                    name: '我的收益',
+                    type: 'line',
+                    data: [5.2, 8.7, 7.5, 12.3, 10.8, 14.6, 16.2],
+                    lineStyle: {
+                        color: '#409EFF'
+                    },
+                    itemStyle: {
+                        color: '#409EFF'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            {
+                                offset: 0,
+                                color: 'rgba(64, 158, 255, 0.7)'
+                            },
+                            {
+                                offset: 1,
+                                color: 'rgba(64, 158, 255, 0.1)'
+                            }
+                        ])
+                    }
+                },
+                {
+                    name: '沪深300',
+                    type: 'line',
+                    data: [4.1, 6.5, 5.8, 9.2, 8.1, 10.5, 11.7],
+                    lineStyle: {
+                        color: '#E6A23C'
+                    },
+                    itemStyle: {
+                        color: '#E6A23C'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            {
+                                offset: 0,
+                                color: 'rgba(230, 162, 60, 0.7)'
+                            },
+                            {
+                                offset: 1,
+                                color: 'rgba(230, 162, 60, 0.1)'
+                            }
+                        ])
+                    }
+                }
+            ]
+        };
+        
+        performanceChart.setOption(option);
+        
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            performanceChart.resize();
+        });
+    }
+});
+</script>
+{% endblock %} 

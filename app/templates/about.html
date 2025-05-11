@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}股票系统 - 关于我们{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="about-container">
+        <h1 class="page-title">关于我们</h1>
+        
+        <el-card class="about-card">
+            <h2>项目简介</h2>
+            <p>股票系统是一个专注于为个人投资者提供专业股票分析和投资工具的平台。本系统成立于2023年，致力于通过先进的技术和数据分析，帮助投资者做出更明智的投资决策。</p>
+            
+            <h2>开发理念</h2>
+            <p>通过技术和数据的力量，使股票投资变得更加简单、透明和高效，让每个投资者都能平等地获取专业级的投资工具和分析能力。</p>
+            
+            <h2>核心优势</h2>
+            <ul>
+                <li>实时数据：提供及时准确的市场行情和公司基本面数据</li>
+                <li>专业分析：结合传统金融理论和现代技术方法进行多层次分析</li>
+                <li>AI技术：运用人工智能技术辅助投资决策，提供个性化建议</li>
+                <li>用户体验：简洁直观的界面设计，让复杂的金融数据易于理解</li>
+                <li>安全可靠：严格的数据安全措施和系统稳定性保障</li>
+            </ul>
+            
+            <h2>开发者介绍</h2>
+            <p>本股票交易分析系统由Pe0ny9进行开发。主要通过 Cursor AI 进行协助开发。</p>
+            
+            <h2>联系方式</h2>
+            <p>如有任何问题或建议，欢迎通过以下方式联系：</p>
+            <p>邮箱：pikachu237325@163.com</p>
+            <p>GitHub：https://github.com/Pe0ny9-A</p>
+        </el-card>
+    </div>
+</div>
+
+<style>
+.about-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #303133;
+}
+
+.about-card {
+    margin-bottom: 30px;
+}
+
+.about-card h2 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ebeef5;
+    padding-bottom: 10px;
+    color: #409EFF;
+}
+
+.about-card h2:first-child {
+    margin-top: 0;
+}
+
+.about-card ul {
+    padding-left: 20px;
+    line-height: 1.8;
+}
+
+.about-card p {
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,251 @@
+/* 
+ * 股票系统 - 主样式文件
+ */
+
+/* 全局样式 */
+:root {
+    --primary-color: #409EFF;
+    --success-color: #67C23A;
+    --warning-color: #E6A23C;
+    --danger-color: #F56C6C;
+    --info-color: #909399;
+    --text-color: #303133;
+    --text-color-secondary: #606266;
+    --border-color: #DCDFE6;
+    --background-color: #F5F7FA;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 14px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 布局样式 */
+.el-container {
+    height: 100vh;
+}
+
+.el-header {
+    background-color: white;
+    color: var(--text-color);
+    line-height: 60px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 20px;
+}
+
+.el-aside {
+    background-color: #304156;
+    color: white;
+    overflow: hidden;
+}
+
+.el-main {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.el-footer {
+    background-color: white;
+    color: var(--text-color-secondary);
+    line-height: 60px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+/* 头部样式 */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.logo a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.nav-menu {
+    display: flex;
+}
+
+/* 侧边栏样式 */
+.sidebar-menu {
+    border-right: none;
+    height: 100%;
+    background-color: #304156;
+}
+
+.sidebar-menu .el-menu-item {
+    color: #bfcbd9;
+}
+
+.sidebar-menu .el-menu-item.is-active {
+    color: #409EFF;
+    background-color: #263445;
+}
+
+.sidebar-menu .el-menu-item:hover {
+    background-color: #263445;
+}
+
+.sidebar-menu .el-sub-menu__title {
+    color: #bfcbd9;
+}
+
+/* 页脚样式 */
+.footer-container {
+    text-align: center;
+    font-size: 12px;
+}
+
+.footer-links {
+    margin-bottom: 5px;
+}
+
+.footer-links a {
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.footer-links a:hover {
+    color: var(--primary-color);
+}
+
+.footer-links .divider {
+    color: var(--border-color);
+}
+
+.copyright {
+    color: var(--text-color-secondary);
+}
+
+/* 认证页面样式 */
+.auth-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-form .el-form-item {
+    margin-bottom: 25px;
+}
+
+.auth-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.auth-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* 卡片样式 */
+.el-card {
+    margin-bottom: 20px;
+}
+
+/* 股票价格样式 */
+.price-up {
+    color: var(--success-color);
+}
+
+.price-down {
+    color: var(--danger-color);
+}
+
+/* 图表容器样式 */
+.chart-container {
+    width: 100%;
+    height: 400px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .el-aside {
+        width: 64px !important;
+    }
+    
+    .el-main {
+        padding: 10px;
+    }
+    
+    .auth-container {
+        margin: 20px auto;
+        width: 90%;
+    }
+}
+
+/* 自定义元素样式 */
+.data-table {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.action-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.search-container {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 股票详情页样式 */
+.stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.stock-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stock-price {
+    font-size: 24px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.stock-change {
+    font-size: 16px;
+} 
