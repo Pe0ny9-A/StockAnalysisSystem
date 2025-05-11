@@ -2,6 +2,9 @@
 
 一个功能全面的股票交易分析平台，为个人投资者提供专业级分析工具和投资组合管理功能。
 
+![版本](https://img.shields.io/badge/版本-A.1.0-blue)
+![测试版](https://img.shields.io/badge/状态-测试版(Alpha)-orange)
+
 ## 功能特性
 
 - **实时行情数据** - 支持A股、港股、美股实时行情查询

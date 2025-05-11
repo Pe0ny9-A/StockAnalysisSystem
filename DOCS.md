@@ -7,6 +7,7 @@
 1. [README.md](README.md) - 项目概述、功能特性和安装指南
 2. [FEATURES.md](FEATURES.md) - 当前已实现功能和计划实现功能
 3. [CONTRIBUTING.md](CONTRIBUTING.md) - 贡献指南和开发规范
+4. [VERSION.md](VERSION.md) - 版本信息和发布记录
 
 ## 许可证
 
