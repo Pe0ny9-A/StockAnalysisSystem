@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Web应用服务
+  web:
+    build: .
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=mysql+pymysql://stockuser:${DB_PASSWORD}@db:3306/stock_system
+      - STOCK_API_KEY=${STOCK_API_KEY}
+      - STOCK_API_URL=${STOCK_API_URL}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_API_URL=${AI_API_URL}
+      - AI_MODEL_NAME=${AI_MODEL_NAME}
+    volumes:
+      - ./logs:/app/logs
+      - ./app/static/uploads:/app/app/static/uploads
+    networks:
+      - stock-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 数据库服务
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=stock_system
+      - MYSQL_USER=stockuser
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - stock-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "stockuser", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 反向代理服务
+  nginx:
+    image: nginx:latest
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./app/static:/app/static
+    depends_on:
+      - web
+    networks:
+      - stock-network
+
+volumes:
+  mysql-data:
+
+networks:
+  stock-network:
+    driver: bridge 
